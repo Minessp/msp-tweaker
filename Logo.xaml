@@ -1,0 +1,33 @@
+<!-- Single source of the logo: used in the title bar and rendered to Assets\msp-tweaker.ico by tools\make-icon.ps1 -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <DrawingImage x:Key="Logo">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <!-- solder mask -->
+        <GeometryDrawing>
+          <GeometryDrawing.Brush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+              <GradientStop Color="#17432F" Offset="0"/>
+              <GradientStop Color="#0C2419" Offset="1"/>
+            </LinearGradientBrush>
+          </GeometryDrawing.Brush>
+          <GeometryDrawing.Geometry>
+            <RectangleGeometry Rect="0,0,64,64" RadiusX="14" RadiusY="14"/>
+          </GeometryDrawing.Geometry>
+        </GeometryDrawing>
+        <!-- gold trace that spells M, ending in two vias -->
+        <GeometryDrawing Geometry="M12,46 V20 L32,38 L52,20 V46">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#D9B45B" Thickness="6" StartLineCap="Round" EndLineCap="Round" LineJoin="Round"/>
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+        <GeometryDrawing Brush="#0C2419" Geometry="M12,46 m-3,0 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0 M52,46 m-3,0 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0">
+          <GeometryDrawing.Pen>
+            <Pen Brush="#D9B45B" Thickness="4"/>
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+</ResourceDictionary>
