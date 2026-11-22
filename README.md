@@ -6,7 +6,7 @@ Each tweak shows what it does, when it helps, its trade-offs and the exact chang
 
 ## Download
 
-1. Open the [Releases](../../releases) page and download `msp-tweaker.exe`.
+1. Download [`msp-tweaker.exe`](https://github.com/Minessp/msp-tweaker/releases/latest/download/msp-tweaker.exe) from the latest release.
 2. Double-click it and accept the administrator prompt.
 3. If SmartScreen says "Windows protected your PC", click **More info**, then **Run anyway**. This appears because the file is not code-signed.
 
@@ -63,7 +63,11 @@ Windows shows a UAC prompt. If you use `dotnet run`, run it from an **administra
 dotnet publish -c Release
 ```
 
-Output: `bin\Release\net10.0-windows\win-x64\publish\msp-tweaker.exe`. This is one self-contained file, and it is the file you attach to a GitHub release.
+Output: `bin\Release\net10.0-windows\win-x64\publish\msp-tweaker.exe`. This is one self-contained file.
+
+### Releases
+
+Every push to `main` that changes more than Markdown files runs `.github/workflows/release.yml`. It builds the exe on GitHub and publishes it as release `v1.0.<run number>`, with notes generated from the commits.
 
 ### Logo
 
