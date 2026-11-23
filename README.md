@@ -84,11 +84,7 @@ Every push to `main` that changes more than Markdown files runs `.github/workflo
 
 ### Logo
 
-The logo is drawn once in `Logo.xaml`. After you change it, regenerate the icon:
-
-```powershell
-powershell.exe -NoProfile -STA -File tools\make-icon.ps1
-```
+The logo is drawn once in `Logo.xaml`; `Assets\msp-tweaker.ico` is a pre-rendered copy of it.
 
 ### Self-test
 
