@@ -36,6 +36,14 @@ static class SelfTest
 
         Check(Sys.Encode(Sys.Decode("dword:2")) == "dword:2" && Sys.Decode("sz:a=1;b") is "a=1;b" && Sys.Decode(null) is null, "backup Encode/Decode");
 
+        string[] ini = [";META", "[A]", "bX=1", "bXY=2", "", "[B]", "bX=3", ""];
+        Check(Sys.IniValue(ini, "B", "bX") == "3" && Sys.IniValue(ini, "A", "bXY") == "2" && Sys.IniValue(ini, "C", "bX") is null, "IniValue reads the key in its own section");
+        Check(Sys.IniEdit(ini, "A", "bX", "0").SequenceEqual([";META", "[A]", "bX=0", "bXY=2", "", "[B]", "bX=3", ""]), "IniEdit replaces only in its section");
+        Check(Sys.IniEdit(ini, "A", "bZ", "5").SequenceEqual([";META", "[A]", "bX=1", "bXY=2", "bZ=5", "", "[B]", "bX=3", ""]), "IniEdit adds after the section's last line");
+        Check(Sys.IniEdit(ini, "C", "k", "v").SequenceEqual([.. ini, "[C]", "k=v"]), "IniEdit creates a missing section");
+        Check(Sys.IniEdit(Sys.IniEdit(ini, "B", "new", "1"), "B", "new", null).SequenceEqual(ini), "IniEdit delete undoes an insert");
+        Check(Sys.IniEdit(ini, "A", "missing", null).SequenceEqual(ini), "IniEdit delete of a missing key changes nothing");
+
         return failures;
     }
 }

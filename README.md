@@ -1,6 +1,6 @@
 # msp-tweaker
 
-**Only the measurable.** A Windows tweaker with 13 changes, and each one has a measured effect on performance or network latency. Placebo tweaks are left out.
+**Only the measurable.** A Windows tweaker that looks for measured problems (driver defaults that cut clocks, Wi-Fi scans that spike ping, CPU parking that fails, a game's frame queue) and fixes only what is actually worse than it should be. Popular placebo tweaks are left out on purpose.
 
 Each tweak shows what it does, when it helps, its trade-offs and the exact change it makes. The status of every tweak is read live from Windows. The UI has light and dark themes and is in English and Portuguese. You can switch both in the title bar, and the app remembers your choice.
 
@@ -14,23 +14,37 @@ You do not need to install anything, and you do not need .NET. Before you delete
 
 ## Tweaks
 
-| Group | Tweak | Risk | Reboot |
-| --- | --- | --- | --- |
-| Power | Max Performance power plan | — | |
-| GPU | Background recording off | — | |
-| GPU | Optimizations for windowed games (flip model) | — | |
-| GPU | Hardware-accelerated GPU scheduling | Drivers or boot | yes |
-| Network | Wi-Fi without power saving | — | |
-| Network | Ethernet without interrupt moderation | Drivers or boot | |
-| Network | Ethernet without power saving (EEE / Green) | Drivers or boot | |
-| Network | Windows Update does not saturate the connection | — | |
-| Kernel & boot | Memory Integrity (HVCI) off | Kernel and security | yes |
-| Kernel & boot | Hypervisor and VBS off | Kernel and security | yes |
-| Kernel & boot | Spectre/Meltdown mitigations off | Kernel and security | yes |
-| Kernel & boot | Message-signaled interrupts (MSI) on GPU and network | Kernel and security | yes |
-| Kernel & boot | Clean boot clock "tweaks" | Drivers or boot | yes |
+The app has two tabs. **System** holds Windows and driver tweaks; **Games** holds per-game settings (Fortnite for now) and a connection test. A tweak only shows as available when it applies to your hardware.
 
-**Risk:** a tweak without an icon is safe and reverts instantly. A warning triangle marks tweaks that change drivers or boot settings. A lightning bolt marks tweaks that change the kernel or security settings. Before you apply a marked tweak, the app asks you to confirm and shows its trade-offs again.
+| Tab | Group | Tweak | Evidence | Risk | Reboot |
+| --- | --- | --- | --- | --- | --- |
+| System | NVIDIA driver | CUDA without dropping the memory clock (`CUDA_FORCE_P2` off) | measured clock drop (200 to 500+ MHz) | Driver | |
+| System | NVIDIA driver | 10 GB shader cache | documented mechanism, not measured | — | |
+| System | NVIDIA driver | Low latency for DX11 games without Reflex | measured, GPU-bound only | — | |
+| System | Processor | Global timer resolution (Windows 11) | measured Sleep precision | Kernel | yes |
+| System | Processor | Ryzen X3D: games on the V-Cache cores (dual-CCD parts) | measured 7 to 17% fps when it fails | — | |
+| System | Network | Wi-Fi without background scans | consistent forum captures | — | |
+| System | Network | Intel I225/I226: repair RSS | documented driver defect | Driver | yes |
+| Games | Fortnite | Performance rendering mode | documented by Epic | — | |
+| Games | Fortnite | NVIDIA Reflex On + Boost | vendor-measured | — | |
+| Games | Fortnite | Frame rate cap for G-Sync/FreeSync (100 Hz+ monitors) | measured in other games | — | |
+
+NVIDIA settings are written to the global driver profile through NVAPI, the same store the NVIDIA Control Panel uses. Fortnite settings edit `%LOCALAPPDATA%\FortniteGame\Saved\Config\WindowsClient\GameUserSettings.ini`; close the game first, because it rewrites that file when it exits. The Wi-Fi tweak installs a logon task that runs `msp-tweaker.exe --wifi-guard`, because Windows turns background scanning back on after every reconnect.
+
+**Risk:** no icon means safe and instantly reversible. A triangle marks driver settings, a lightning bolt marks kernel or security changes. Marked tweaks ask for confirmation and create a restore point first.
+
+### Left out on purpose
+
+These are common in other tweakers but have no measured gain, or were measured as worse:
+
+- **`NetworkThrottlingIndex` off:** measured higher network-driver DPC latency.
+- **Memory compression off:** about 35x more paging writes, no frame-time gain.
+- **Nagle off (`TcpAckFrequency`, `TCPNoDelay`), BBR2, autotuning off, RWIN, DNS for ping:** TCP-only or no effect on game traffic.
+- **MMCSS `Tasks\Games`, `Win32PrioritySeparation`, process priority and affinity:** no measurement.
+- **Disabling idle states, interrupt affinity, xHCI interrupt moderation:** need per-machine measurement; the last one needs a vulnerable kernel driver.
+- **NVIDIA "Prefer maximum performance", forced Resizable BAR:** no measurement, or mixed results per game.
+- **Fortnite `Engine.ini` cvars and "fps" launch flags:** ignored by shipping builds or unmeasured; `-NOTEXTURESTREAMING` hurts 3 to 4 GB cards.
+- **Earlier versions' tweaks** (power plan, Game DVR, flip model, HAGS, VBS/HVCI, Spectre, EEE, interrupt moderation, MSI and others) were removed as obvious or unmeasured. If you applied one, it still shows up so you can revert it.
 
 ## Safety
 
@@ -38,7 +52,6 @@ You do not need to install anything, and you do not need .NET. Before you delete
 - **Every change is backed up.** Before it writes anything, the app saves the original value in `HKLM\SOFTWARE\msp-tweaker`. **Revert** restores that exact value. The backup is in HKLM so a standard user cannot plant values that Revert would then apply as admin.
 - **Restore point.** Before the first marked tweak in a session, the app creates a system restore point. If Windows refuses, you can cancel or continue without one.
 - **BitLocker.** If BitLocker is on, the app suspends it for one reboot before it changes boot settings, so Windows does not ask for the recovery key.
-- **MSI recovery.** If a device does not start after the MSI tweak, boot into Safe Mode, open msp-tweaker and click Revert.
 
 ## Requirements
 

@@ -154,6 +154,216 @@ static class Sys
         Run(Powercfg, "/setactive " + PlanGuid);
     }
 
+    public const string BalancedGuid = "381b4222-f694-41f0-9685-ff5bb260df2e";
+
+    public static void PlanActivate(string id, string guid)
+    {
+        Backup.Remember(id, "plan", ActiveScheme());
+        Run(Powercfg, "/setactive " + guid);
+    }
+
+    // ---------- hardware ----------
+
+    public static string CpuName() =>
+        RegGet(@"HKLM\HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString") as string ?? "";
+
+    // dual-CCD X3D parts: only one CCD has the V-Cache, and AMD's driver parks the other one during games
+    public static bool DualCcdX3D() => Regex.IsMatch(CpuName(), @"\b(7900|7950|9900|9950)X3D\b");
+
+    public static int RefreshRate() =>
+        int.Parse(Ps("(Get-CimInstance Win32_VideoController | Where-Object PNPDeviceID -like 'PCI\\*' | Where-Object CurrentRefreshRate | Select-Object -First 1).CurrentRefreshRate"));
+
+    // ---------- NVIDIA driver profile (NVAPI DRS, the store the NVIDIA Control Panel writes) ----------
+
+    [DllImport("nvapi64.dll", EntryPoint = "nvapi_QueryInterface", CallingConvention = CallingConvention.Cdecl)]
+    static extern IntPtr NvQuery(uint id);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate int NvCall();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate int NvOut(out IntPtr h);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate int NvSession(IntPtr s);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate int NvProfile(IntPtr s, out IntPtr p);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate int NvGet(IntPtr s, IntPtr p, uint id, [In, Out] byte[] setting);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate int NvSet(IntPtr s, IntPtr p, [In] byte[] setting);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate int NvDelete(IntPtr s, IntPtr p, uint id);
+
+    // NVDRS_SETTING_V1: version, 2048-char name, id, type, location, two flags, then two 4100-byte value unions
+    const int SettingSize = 12320, OffId = 4100, OffPredefined = 4112, OffCurrent = 8220;
+    const uint SettingVer = SettingSize | (1u << 16);
+    const int NvSettingNotFound = -160;
+
+    // classic export ids first; newer drivers also answer to the ids Profile Inspector uses
+    static T Nv<T>(uint id, uint alt = 0) where T : Delegate
+    {
+        var p = NvQuery(id);
+        if (p == IntPtr.Zero && alt != 0) p = NvQuery(alt);
+        return p == IntPtr.Zero ? throw new InvalidOperationException($"NVAPI 0x{id:X8} not found") : Marshal.GetDelegateForFunctionPointer<T>(p);
+    }
+
+    static void NvCheck(int r, string what)
+    {
+        if (r != 0) throw new InvalidOperationException($"NVAPI {what}: {r}");
+    }
+
+    public static bool HasNvidia()
+    {
+        try { return Nv<NvCall>(0x0150E828)() == 0; }
+        catch (DllNotFoundException) { return false; }
+    }
+
+    static T Drs<T>(Func<IntPtr, IntPtr, T> body)
+    {
+        NvCheck(Nv<NvCall>(0x0150E828)(), "Initialize");
+        NvCheck(Nv<NvOut>(0x0694D52E)(out var s), "CreateSession");
+        try
+        {
+            NvCheck(Nv<NvSession>(0x375DBD6B)(s), "LoadSettings");
+            NvCheck(Nv<NvProfile>(0xDA8466A0)(s, out var p), "GetBaseProfile");
+            return body(s, p);
+        }
+        finally { Nv<NvSession>(0xDAD9CFF8)(s); }
+    }
+
+    // effective value on the global (base) profile; Predefined = the driver's own default, nothing set by anyone
+    public static (uint Value, bool Predefined)? DrsGet(uint setting) => Drs<(uint, bool)?>((s, p) =>
+    {
+        var b = new byte[SettingSize];
+        BitConverter.TryWriteBytes(b, SettingVer);
+        var r = Nv<NvGet>(0x73BF8338, 0xEA99498D)(s, p, setting, b);
+        if (r == NvSettingNotFound) return null;
+        NvCheck(r, "GetSetting");
+        return (BitConverter.ToUInt32(b, OffCurrent), BitConverter.ToUInt32(b, OffPredefined) != 0);
+    });
+
+    public static void DrsSet(string id, uint setting, uint value)
+    {
+        var old = DrsGet(setting);
+        Backup.Remember(id, $"drs|{setting:X8}", old is { Predefined: false } o ? o.Value.ToString() : null);
+        DrsWrite(setting, value);
+    }
+
+    // null deletes the user value, so the driver default applies again
+    static void DrsWrite(uint setting, uint? value) => Drs((s, p) =>
+    {
+        if (value is null)
+        {
+            var r = Nv<NvDelete>(0xE4A26362, 0xD20D29DF)(s, p, setting);
+            if (r != NvSettingNotFound) NvCheck(r, "DeleteProfileSetting");
+        }
+        else
+        {
+            var b = new byte[SettingSize]; // settingType 0 = DWORD
+            BitConverter.TryWriteBytes(b, SettingVer);
+            BitConverter.TryWriteBytes(b.AsSpan(OffId), setting);
+            BitConverter.TryWriteBytes(b.AsSpan(OffCurrent), value.Value);
+            NvCheck(Nv<NvSet>(0x577DD202, 0x8A2CF5F5)(s, p, b), "SetSetting");
+        }
+        NvCheck(Nv<NvSession>(0xFCBC7E14)(s), "SaveSettings");
+        return 0;
+    });
+
+    // ---------- Wi-Fi background scan ----------
+
+    [DllImport("wlanapi.dll")] static extern int WlanOpenHandle(uint version, IntPtr reserved, out uint negotiated, out IntPtr handle);
+    [DllImport("wlanapi.dll")] static extern int WlanEnumInterfaces(IntPtr handle, IntPtr reserved, out IntPtr list);
+    [DllImport("wlanapi.dll")] static extern int WlanSetInterface(IntPtr handle, ref Guid iface, int opcode, int size, ref int data, IntPtr reserved);
+    [DllImport("wlanapi.dll")] static extern void WlanFreeMemory(IntPtr memory);
+
+    public const string WifiTask = "msp-tweaker Wi-Fi scan guard";
+    static readonly string Schtasks = Path.Combine(Environment.SystemDirectory, "schtasks.exe");
+
+    // Windows turns background scan back on after every reconnect, and the setting only lasts while our WLAN handle is open,
+    // so this runs as a resident process started by a logon task.
+    // shortcut: polls every 5 s instead of WlanRegisterNotification; upgrade if the 5 s window after a reconnect matters.
+    public static void WifiGuard()
+    {
+        if (WlanOpenHandle(2, IntPtr.Zero, out _, out var h) != 0) return;
+        while (true)
+        {
+            if (WlanEnumInterfaces(h, IntPtr.Zero, out var list) == 0)
+            {
+                // WLAN_INTERFACE_INFO_LIST: two DWORDs, then 532-byte entries that start with the interface GUID
+                var n = Marshal.ReadInt32(list);
+                for (var i = 0; i < n; i++)
+                {
+                    var g = Marshal.PtrToStructure<Guid>(list + 8 + i * 532);
+                    int off = 0, on = 1;
+                    WlanSetInterface(h, ref g, 2, sizeof(int), ref off, IntPtr.Zero); // background_scan_enabled
+                    WlanSetInterface(h, ref g, 3, sizeof(int), ref on, IntPtr.Zero);  // media_streaming_mode
+                }
+                WlanFreeMemory(list);
+            }
+            Thread.Sleep(5000);
+        }
+    }
+
+    public static bool TaskExists(string name)
+    {
+        try { Run(Schtasks, $"/query /tn \"{name}\""); return true; }
+        catch (InvalidOperationException) { return false; }
+    }
+
+    public static void WifiGuardInstall(string id)
+    {
+        Backup.Remember(id, "task|" + WifiTask, null);
+        var exe = Environment.ProcessPath ?? throw new InvalidOperationException("unknown exe path");
+        Run(Schtasks, $"/create /tn \"{WifiTask}\" /sc onlogon /rl highest /f /tr \"\\\"{exe}\\\" --wifi-guard\"");
+        Run(Schtasks, $"/run /tn \"{WifiTask}\"");
+    }
+
+    static void TaskRemove(string name)
+    {
+        if (!TaskExists(name)) return;
+        try { Run(Schtasks, $"/end /tn \"{name}\""); } catch (InvalidOperationException) { } // not running
+        Run(Schtasks, $"/delete /tn \"{name}\" /f");
+    }
+
+    // ---------- network adapter registry ----------
+
+    const string NetClass = @"HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}";
+
+    // class subkeys of physical adapters whose description matches; the class key is where NDIS reads keywords like *RSS
+    public static string[] NicKeys(string descriptionRegex) =>
+        Ps($"$c = Get-ChildItem 'Registry::{NetClass.Replace("HKLM", "HKEY_LOCAL_MACHINE")}' -ErrorAction SilentlyContinue; " +
+           $"Get-NetAdapter -Physical | Where-Object InterfaceDescription -match {Q(descriptionRegex)} | ForEach-Object {{ $g = $_.InterfaceGuid; " +
+           "$c | Where-Object { (Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue).NetCfgInstanceId -eq $g } | ForEach-Object { $_.Name } }")
+        .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(k => k.Replace("HKEY_LOCAL_MACHINE", "HKLM")).ToArray();
+
+    public static void NicRestart(string descriptionRegex) =>
+        Ps($"Get-NetAdapter -Physical | Where-Object InterfaceDescription -match {Q(descriptionRegex)} | Restart-NetAdapter");
+
+    // ---------- connection test ----------
+
+    public sealed record PingStats(string Target, int Sent, int Lost, double AvgMs, double JitterMs);
+
+    // jitter = mean difference between consecutive replies, the RFC 3550 idea without its smoothing
+    public static PingStats PingTest(System.Net.IPAddress target, string label, int count = 40)
+    {
+        using var ping = new System.Net.NetworkInformation.Ping();
+        var times = new List<double>();
+        for (var i = 0; i < count; i++)
+        {
+            var r = ping.Send(target, 1000);
+            if (r.Status == System.Net.NetworkInformation.IPStatus.Success) times.Add(r.RoundtripTime);
+            Thread.Sleep(50);
+        }
+        var jitter = times.Count > 1 ? times.Zip(times.Skip(1), (a, b) => Math.Abs(a - b)).Average() : 0;
+        return new(label, count, count - times.Count, times.Count > 0 ? times.Average() : 0, jitter);
+    }
+
+    [DllImport("iphlpapi.dll")] static extern int GetBestInterface(uint destination, out uint index);
+
+    // gateway of the interface Windows routes internet traffic through, so VPN adapters with their own gateway are skipped
+    public static System.Net.IPAddress? Gateway()
+    {
+        if (GetBestInterface(BitConverter.ToUInt32(System.Net.IPAddress.Parse("1.1.1.1").GetAddressBytes()), out var index) != 0) return null;
+        return System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+            .Where(n => n.Supports(System.Net.NetworkInformation.NetworkInterfaceComponent.IPv4) && n.GetIPProperties().GetIPv4Properties()?.Index == index)
+            .SelectMany(n => n.GetIPProperties().GatewayAddresses)
+            .Select(g => g.Address)
+            .FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+    }
+
     // ---------- bcdedit ----------
 
     internal static Dictionary<string, string> ParseBcd(string s) =>
@@ -220,6 +430,98 @@ static class Sys
     public static string MsiKey(string device) =>
         $@"HKLM\SYSTEM\CurrentControlSet\Enum\{device}\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties";
 
+    // ---------- Fortnite ----------
+
+    public const string FortniteProcess = "FortniteClient-Win64-Shipping";
+    public static readonly string FortniteIni = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"FortniteGame\Saved\Config\WindowsClient\GameUserSettings.ini");
+
+    // Epic's launcher manifest lists every installed game with its folder
+    public static string? FortniteExe()
+    {
+        var dat = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"Epic\UnrealEngineLauncher\LauncherInstalled.dat");
+        if (!File.Exists(dat)) return null;
+        using var doc = JsonDocument.Parse(File.ReadAllText(dat));
+        foreach (var e in doc.RootElement.GetProperty("InstallationList").EnumerateArray())
+            if (e.GetProperty("AppName").GetString() == "Fortnite")
+            {
+                var exe = Path.Combine(e.GetProperty("InstallLocation").GetString()!, @"FortniteGame\Binaries\Win64", FortniteProcess + ".exe");
+                return File.Exists(exe) ? exe : null;
+            }
+        return null;
+    }
+
+    // physical GPUs only: remote and basic display adapters are not PCI devices
+    public static int GpuCount() => int.Parse(Ps("@(Get-CimInstance Win32_VideoController | Where-Object PNPDeviceID -like 'PCI\\*').Count"));
+
+    // ---------- ini ----------
+
+    public static string? IniGet(string path, string section, string key) => IniValue(File.ReadAllLines(path), section, key);
+
+    public static void IniSet(string id, string path, string section, string key, string value)
+    {
+        GameClosed();
+        Backup.Remember(id, $"ini|{section}|{key}|{path}", IniGet(path, section, key));
+        IniWrite(path, section, key, value);
+    }
+
+    static void IniWrite(string path, string section, string key, string? value)
+    {
+        GameClosed();
+        File.WriteAllLines(path, IniEdit(File.ReadAllLines(path), section, key, value));
+    }
+
+    // shortcut: only Fortnite's ini is written; move this check to the caller when a second game is added
+    static void GameClosed()
+    {
+        if (Process.GetProcessesByName(FortniteProcess).Length > 0)
+            throw new InvalidOperationException(L.T("Close Fortnite first: it rewrites its settings file when it exits.",
+                                                    "Feche o Fortnite antes: ele reescreve o arquivo de configurações ao sair."));
+    }
+
+    // header index, end of the section body (exclusive), key line; -1 when missing
+    static (int Head, int End, int Line) IniFind(string[] lines, string section, string key)
+    {
+        int head = Array.FindIndex(lines, l => l.Trim() == $"[{section}]"), end = lines.Length, line = -1;
+        if (head < 0) return (-1, -1, -1);
+        for (var i = head + 1; i < lines.Length; i++)
+        {
+            if (lines[i].StartsWith('[')) { end = i; break; }
+            if (line < 0 && lines[i].StartsWith(key + "=")) line = i;
+        }
+        return (head, end, line);
+    }
+
+    internal static string? IniValue(string[] lines, string section, string key)
+    {
+        var line = IniFind(lines, section, key).Line;
+        return line < 0 ? null : lines[line][(key.Length + 1)..];
+    }
+
+    // null deletes the key; a new key goes after the last non-blank line of its section
+    internal static string[] IniEdit(string[] lines, string section, string key, string? value)
+    {
+        var (head, end, line) = IniFind(lines, section, key);
+        var list = lines.ToList();
+        if (line >= 0)
+        {
+            if (value is null) list.RemoveAt(line);
+            else list[line] = $"{key}={value}";
+        }
+        else if (value is not null && head < 0)
+        {
+            if (list.Count > 0 && list[^1].Trim() != "") list.Add("");
+            list.AddRange([$"[{section}]", $"{key}={value}"]);
+        }
+        else if (value is not null)
+        {
+            var at = end;
+            while (at > head + 1 && list[at - 1].Trim() == "") at--;
+            list.Insert(at, $"{key}={value}");
+        }
+        return [.. list];
+    }
+
     // ---------- system safety ----------
 
     public static void CreateRestorePoint() =>
@@ -237,6 +539,12 @@ static class Sys
             case "nic": NicWrite([(p[2], p[1], old!)]); break;
             case "bcd": BcdWrite(p[1], old); break;
             case "plan": Run(Powercfg, "/setactive " + old); break;
+            case "ini":
+                var n = key.Split('|', 4);
+                IniWrite(n[3], n[1], n[2], old);
+                break;
+            case "drs": DrsWrite(Convert.ToUInt32(p[1], 16), old is null ? null : uint.Parse(old)); break;
+            case "task": TaskRemove(p[1]); break;
             case "pwr":
                 var q = key.Split('|');
                 var v = old!.Split(',');

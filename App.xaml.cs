@@ -13,6 +13,14 @@ public partial class App : Application
             if (MainWindow is not { IsVisible: true }) Shutdown(1); // no window means no way to quit
         };
 
+        // resident mode started by the logon task of the Wi-Fi tweak: no window, never returns while WLAN is available
+        if (e.Args.Contains("--wifi-guard"))
+        {
+            Sys.WifiGuard();
+            Shutdown();
+            return;
+        }
+
         if (e.Args.Contains("--selftest"))
         {
             var failures = SelfTest.Run();

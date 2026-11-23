@@ -2,104 +2,49 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:m="clr-namespace:MspTweaker"
-        Title="Msp Tweaker" Width="1120" Height="780" MinWidth="900" MinHeight="560"
+        Title="Msp Tweaker" Width="1240" Height="800" MinWidth="980" MinHeight="580"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
         Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}"
         BorderBrush="{DynamicResource Line}" BorderThickness="0"
-        FontFamily="{StaticResource Barlow}"
+        FontFamily="{StaticResource Sans}"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
 
   <WindowChrome.WindowChrome>
-    <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    <WindowChrome CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
   </WindowChrome.WindowChrome>
 
   <Window.Resources>
-    <DataTemplate x:Key="TweakTpl">
-      <Grid x:Name="Item" Margin="0,0,0,14" Background="Transparent">
-        <Border x:Name="C1" Style="{StaticResource Corner}" BorderThickness="1.5,1.5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-        <Border x:Name="C2" Style="{StaticResource Corner}" BorderThickness="0,1.5,1.5,0" HorizontalAlignment="Right" VerticalAlignment="Top"/>
-        <Border x:Name="C3" Style="{StaticResource Corner}" BorderThickness="1.5,0,0,1.5" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
-        <Border x:Name="C4" Style="{StaticResource Corner}" BorderThickness="0,0,1.5,1.5" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-
-        <StackPanel Margin="24,18,24,16">
-          <DockPanel>
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="20,5,0,0">
-              <Rectangle Style="{StaticResource Led}" Margin="0,1,9,0"/>
-              <TextBlock x:Name="Status" Text="{Binding StatusText}" Style="{StaticResource Label}"/>
-            </StackPanel>
-            <TextBlock Text="{Binding T.Title}" Style="{StaticResource Head}" FontSize="21"/>
-          </DockPanel>
-
-          <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding ShowMeta, Converter={StaticResource Vis}}">
-            <StackPanel x:Name="Risk" Orientation="Horizontal" Margin="0,0,18,0" Visibility="Collapsed">
-              <TextBlock x:Name="RiskIcon" Style="{StaticResource Glyph}" Text="&#xE7BA;" Foreground="{DynamicResource Warn}"/>
-              <TextBlock x:Name="RiskText" Text="{Binding RiskText}" Style="{StaticResource Label}" Foreground="{DynamicResource Warn}"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Visibility="{Binding T.Reboot, Converter={StaticResource Vis}}">
-              <TextBlock Style="{StaticResource Glyph}" Text="&#xE72C;" Foreground="{DynamicResource Muted}"/>
-              <TextBlock Text="{Binding [reboot], Source={x:Static m:L.I}}" Style="{StaticResource Label}"/>
-            </StackPanel>
-          </StackPanel>
-
-          <TextBlock Text="{Binding T.Effect}" Style="{StaticResource Body}" Foreground="{DynamicResource Muted}" MaxWidth="620" HorizontalAlignment="Left" Margin="0,10,0,0"/>
-          <TextBlock Text="{Binding Error}" Style="{StaticResource Body}" Foreground="{DynamicResource Danger}" MaxWidth="620" HorizontalAlignment="Left"
-                     Margin="0,8,0,0" Visibility="{Binding HasError, Converter={StaticResource Vis}}"/>
-
-          <DockPanel Margin="0,14,0,0">
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-              <Button Content="{Binding [revert], Source={x:Static m:L.I}}" Style="{StaticResource Secondary}" Click="Revert_Click"
-                      Visibility="{Binding ShowRevert, Converter={StaticResource Vis}}" IsEnabled="{Binding Free}"
-                      AutomationProperties.Name="{Binding RevertName}"/>
-              <Button Content="{Binding [apply], Source={x:Static m:L.I}}" Style="{StaticResource Primary}" Click="Apply_Click" Margin="8,0,0,0"
-                      Visibility="{Binding ShowApply, Converter={StaticResource Vis}}" IsEnabled="{Binding Free}"
-                      AutomationProperties.Name="{Binding ApplyName}"/>
-            </StackPanel>
-            <ToggleButton Content="{Binding [details], Source={x:Static m:L.I}}" Style="{StaticResource Disclosure}"
-                          IsChecked="{Binding Open}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-          </DockPanel>
-
-          <Grid Visibility="{Binding Open, Converter={StaticResource Vis}}" Margin="0,16,0,0">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="118"/>
-              <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto"/>
-              <RowDefinition Height="Auto"/>
-              <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <TextBlock Text="{Binding [indication], Source={x:Static m:L.I}}" Style="{StaticResource Label}" Margin="0,1,0,0"/>
-            <TextBlock Grid.Column="1" Text="{Binding T.Indication}" Style="{StaticResource Body}" MaxWidth="600" HorizontalAlignment="Left"/>
-
-            <TextBlock Grid.Row="1" Text="{Binding [contra], Source={x:Static m:L.I}}" Style="{StaticResource Label}" Margin="0,11,0,0"/>
-            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding T.Contraindication}" Style="{StaticResource Body}" MaxWidth="600" HorizontalAlignment="Left" Margin="0,10,0,0"/>
-
-            <TextBlock Grid.Row="2" Text="{Binding [dosage], Source={x:Static m:L.I}}" Style="{StaticResource Label}" Margin="0,15,0,0"/>
-            <Border Grid.Row="2" Grid.Column="1" Margin="0,12,0,0" Padding="12,9" CornerRadius="3" Background="{DynamicResource Surface2}">
-              <TextBlock Text="{Binding T.Dosage}" FontFamily="{StaticResource Mono}" FontSize="12" LineHeight="18"
-                         Foreground="{DynamicResource Text}" TextWrapping="Wrap"/>
-            </Border>
-          </Grid>
+    <!-- one tweak: title and when it helps on the left, marks, status and the switch on the right -->
+    <DataTemplate x:Key="RowTpl">
+      <Grid Height="64">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+          <TextBlock Text="{Binding T.Title}" Style="{StaticResource Head}" FontSize="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Text="{Binding T.Indication}" Style="{StaticResource Body}" FontSize="13" Foreground="{DynamicResource Muted}"
+                     TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
         </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock x:Name="RiskIcon" Style="{StaticResource Glyph}" Text="&#xE7BA;" Foreground="{DynamicResource Warn}" Margin="0,0,12,0"
+                     Visibility="{Binding ShowRisk, Converter={StaticResource Vis}}" ToolTip="{Binding RiskSentence}"/>
+          <TextBlock Style="{StaticResource Glyph}" Text="&#xE72C;" Foreground="{DynamicResource Subtle}" Margin="0,0,12,0"
+                     Visibility="{Binding T.Reboot, Converter={StaticResource Vis}}" ToolTip="{Binding [reboot], Source={x:Static m:L.I}}"/>
+        </StackPanel>
+        <TextBlock x:Name="Status" Grid.Column="2" Text="{Binding StatusText}" Style="{StaticResource Label}" Foreground="{DynamicResource Subtle}"
+                   VerticalAlignment="Center" Margin="0,0,16,0"/>
+        <Button Grid.Column="3" Style="{StaticResource Switch}" Click="Switch_Click" IsEnabled="{Binding CanToggle}"
+                AutomationProperties.Name="{Binding SwitchName}" AutomationProperties.ItemStatus="{Binding StatusText}"/>
       </Grid>
       <DataTemplate.Triggers>
-        <Trigger SourceName="Item" Property="IsMouseOver" Value="True">
-          <Setter TargetName="C1" Property="BorderBrush" Value="{DynamicResource LineStrong}"/>
-          <Setter TargetName="C2" Property="BorderBrush" Value="{DynamicResource LineStrong}"/>
-          <Setter TargetName="C3" Property="BorderBrush" Value="{DynamicResource LineStrong}"/>
-          <Setter TargetName="C4" Property="BorderBrush" Value="{DynamicResource LineStrong}"/>
-        </Trigger>
-        <DataTrigger Binding="{Binding T.Stripe}" Value="Red">
-          <Setter TargetName="Risk" Property="Visibility" Value="Visible"/>
-        </DataTrigger>
         <DataTrigger Binding="{Binding T.Stripe}" Value="Black">
-          <Setter TargetName="Risk" Property="Visibility" Value="Visible"/>
           <Setter TargetName="RiskIcon" Property="Text" Value="&#xE945;"/>
           <Setter TargetName="RiskIcon" Property="Foreground" Value="{DynamicResource Danger}"/>
-          <Setter TargetName="RiskText" Property="Foreground" Value="{DynamicResource Danger}"/>
         </DataTrigger>
-        <DataTrigger Binding="{Binding Tone}" Value="ok">
+        <DataTrigger Binding="{Binding Tone}" Value="todo">
           <Setter TargetName="Status" Property="Foreground" Value="{DynamicResource AccentText}"/>
         </DataTrigger>
         <DataTrigger Binding="{Binding Tone}" Value="warn">
@@ -110,17 +55,42 @@
         </DataTrigger>
       </DataTemplate.Triggers>
     </DataTemplate>
+
+    <!-- a group: label above a raised panel holding its rows -->
+    <Style x:Key="GroupPanel" TargetType="GroupItem">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="GroupItem">
+            <StackPanel Margin="0,0,0,24">
+              <TextBlock Text="{Binding Name}" Style="{StaticResource Label}" FontSize="13" Margin="0,0,0,8"/>
+              <Border Background="{DynamicResource Surface}" CornerRadius="8" Padding="4">
+                <ItemsPresenter/>
+              </Border>
+            </StackPanel>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- label over value, like a spec sheet -->
+    <Style x:Key="SpecValue" TargetType="TextBlock" BasedOn="{StaticResource Body}">
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="TextWrapping" Value="NoWrap"/>
+      <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+      <Setter Property="Margin" Value="0,4,0,0"/>
+    </Style>
   </Window.Resources>
 
   <Grid x:Name="Root">
     <Grid x:Name="Main">
       <Grid.RowDefinitions>
-        <RowDefinition Height="44"/>
+        <RowDefinition Height="40"/>
+        <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="272"/>
         <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="400"/>
       </Grid.ColumnDefinitions>
 
       <!-- title bar -->
@@ -136,121 +106,178 @@
           <Button Style="{StaticResource CloseCaption}" Content="&#xE8BB;" Click="Close_Click"
                   AutomationProperties.Name="{Binding [close], Source={x:Static m:L.I}}"/>
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="18,0,0,0" VerticalAlignment="Center">
-          <Image Source="{StaticResource Logo}" Width="22" Height="22"/>
-          <TextBlock Text="Msp Tweaker" Style="{StaticResource Head}" FontSize="17" VerticalAlignment="Center" Margin="10,0,0,2"/>
+        <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+          <Image Source="{StaticResource Logo}" Width="18" Height="18"/>
+          <TextBlock Text="Msp Tweaker" Style="{StaticResource Head}" FontSize="13" VerticalAlignment="Center" Margin="8,0,0,0"/>
         </StackPanel>
       </DockPanel>
 
-      <!-- sidebar: the board's status LED bank -->
-      <Border Grid.Row="1" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
-        <DockPanel Margin="26,14,24,20">
-          <StackPanel DockPanel.Dock="Top">
-            <TextBlock x:Name="Cpu" Style="{StaticResource Head}" FontSize="18"/>
-            <TextBlock x:Name="WinVer" Style="{StaticResource Body}" FontSize="13.5" Foreground="{DynamicResource Muted}"/>
-
-            <ItemsControl x:Name="Bank" Margin="0,30,0,0" Focusable="False">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <DockPanel Margin="0,0,0,12">
-                    <TextBlock Text="{Binding Name}" Style="{StaticResource Label}" Width="100"/>
-                    <ItemsControl ItemsSource="{Binding Items}" Focusable="False" VerticalAlignment="Center">
-                      <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                          <Rectangle Style="{StaticResource Led}" Width="18" Height="7" Margin="0,0,7,0" ToolTip="{Binding T.Title}"/>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                  </DockPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <TextBlock x:Name="Summary" Style="{StaticResource Body}" FontSize="15" Margin="0,8,0,0"/>
-            <TextBlock x:Name="Skipped" Style="{StaticResource Body}" FontSize="13.5" Foreground="{DynamicResource Subtle}"/>
-
-            <StackPanel Margin="0,30,0,0">
-              <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <TextBlock Style="{StaticResource Glyph}" Text="&#xE7BA;" Foreground="{DynamicResource Warn}"/>
-                <TextBlock Text="{Binding [riskRed], Source={x:Static m:L.I}}" Style="{StaticResource Label}" Foreground="{DynamicResource Warn}"/>
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <TextBlock Style="{StaticResource Glyph}" Text="&#xE945;" Foreground="{DynamicResource Danger}"/>
-                <TextBlock Text="{Binding [riskBlack], Source={x:Static m:L.I}}" Style="{StaticResource Label}" Foreground="{DynamicResource Danger}"/>
-              </StackPanel>
-              <TextBlock Text="{Binding [riskNone], Source={x:Static m:L.I}}" Style="{StaticResource Body}" FontSize="13.5" Foreground="{DynamicResource Muted}"/>
-            </StackPanel>
+      <!-- tabs, with the summary and a pending reboot on the right -->
+      <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+        <DockPanel Height="56" Margin="32,0,24,0">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock x:Name="Summary" Style="{StaticResource Body}" FontSize="13" Foreground="{DynamicResource Muted}" VerticalAlignment="Center"/>
+            <Button x:Name="Pending" Visibility="Collapsed" Style="{StaticResource Primary}" Margin="16,0,0,0" Click="Reboot_Click"
+                    Content="{Binding [rebootNow], Source={x:Static m:L.I}}"/>
           </StackPanel>
-
-          <StackPanel DockPanel.Dock="Bottom">
-            <Border x:Name="Pending" Visibility="Collapsed" CornerRadius="4" Padding="14,12,14,14" Margin="0,0,0,18" Background="{DynamicResource Surface}">
-              <StackPanel>
-                <StackPanel Orientation="Horizontal">
-                  <Rectangle Width="14" Height="6" RadiusX="1" RadiusY="1" Fill="{DynamicResource LedAmber}" VerticalAlignment="Center" Margin="0,1,9,0"/>
-                  <TextBlock Text="{Binding [pending], Source={x:Static m:L.I}}" Style="{StaticResource Head}" FontSize="15.5" Foreground="{DynamicResource Warn}"/>
-                </StackPanel>
-                <TextBlock Text="{Binding [pendingBody], Source={x:Static m:L.I}}" Style="{StaticResource Body}" FontSize="13.5" Margin="0,4,0,10"/>
-                <Button Content="{Binding [rebootNow], Source={x:Static m:L.I}}" Style="{StaticResource Secondary}" HorizontalAlignment="Left" Click="Reboot_Click"/>
-              </StackPanel>
-            </Border>
-            <TextBlock Style="{StaticResource Body}" FontSize="12.5" LineHeight="18" Foreground="{DynamicResource Subtle}">
-              <Run Text="{Binding [backupNote], Source={x:Static m:L.I}, Mode=OneWay}"/><LineBreak/>
-              <Run x:Name="BackupLocation" FontFamily="{StaticResource Mono}" FontSize="11.5"/>
-            </TextBlock>
+          <StackPanel Orientation="Horizontal">
+            <RadioButton x:Name="TabSystem" Style="{StaticResource Tab}" GroupName="Tabs" IsChecked="True" Checked="Tab_Checked"
+                         Content="{Binding [system], Source={x:Static m:L.I}}"/>
+            <RadioButton x:Name="TabGames" Style="{StaticResource Tab}" GroupName="Tabs" Checked="Tab_Checked"
+                         Content="{Binding [games], Source={x:Static m:L.I}}"/>
           </StackPanel>
-          <Border/>
         </DockPanel>
       </Border>
 
-      <!-- tweaks -->
-      <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
-        <StackPanel Margin="34,8,30,32" MaxWidth="840" HorizontalAlignment="Left">
-          <TextBlock Text="{Binding [title], Source={x:Static m:L.I}}" Style="{StaticResource Head}" FontSize="36"/>
-          <TextBlock Text="{Binding [intro], Source={x:Static m:L.I}}" Style="{StaticResource Body}" FontSize="15" LineHeight="23"
-                     Foreground="{DynamicResource Muted}" MaxWidth="640" HorizontalAlignment="Left" Margin="0,4,0,6"/>
+      <!-- list page -->
+      <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel Margin="32,24,32,32">
 
-          <ItemsControl x:Name="Cards" ItemTemplate="{StaticResource TweakTpl}" Focusable="False">
-            <ItemsControl.GroupStyle>
-              <GroupStyle>
-                <GroupStyle.HeaderTemplate>
-                  <DataTemplate>
-                    <StackPanel Orientation="Horizontal" Margin="2,24,0,10">
-                      <TextBlock Text="{Binding Name}" Style="{StaticResource Head}" FontSize="16" Foreground="{DynamicResource Muted}"/>
-                      <TextBlock Text="{Binding ItemCount}" Style="{StaticResource Label}" Foreground="{DynamicResource Subtle}" Margin="8,1,0,0"/>
-                    </StackPanel>
-                  </DataTemplate>
-                </GroupStyle.HeaderTemplate>
-              </GroupStyle>
-            </ItemsControl.GroupStyle>
-          </ItemsControl>
+          <!-- system: what the tweaks are checked against -->
+          <Border x:Name="SpecPanel" Background="{DynamicResource Surface}" CornerRadius="8" Padding="20,16" Margin="0,0,0,32">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel Margin="0,0,16,0">
+                <TextBlock Text="{Binding [cpu], Source={x:Static m:L.I}}" Style="{StaticResource Label}"/>
+                <TextBlock x:Name="SpecCpu" Style="{StaticResource SpecValue}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                <TextBlock Text="{Binding [gpu], Source={x:Static m:L.I}}" Style="{StaticResource Label}"/>
+                <TextBlock x:Name="SpecGpu" Style="{StaticResource SpecValue}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Text="Windows" Style="{StaticResource Label}"/>
+                <TextBlock x:Name="SpecWin" Style="{StaticResource SpecValue}"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- games: the game the section belongs to -->
+          <StackPanel x:Name="GamePanel" Visibility="Collapsed" Margin="0,0,0,24">
+            <TextBlock Text="Fortnite" Style="{StaticResource Head}" FontSize="20"/>
+            <TextBlock x:Name="GamePath" Style="{StaticResource Body}" FontSize="13" Foreground="{DynamicResource Muted}" Margin="0,4,0,0"/>
+          </StackPanel>
+
+          <ListBox x:Name="List" Style="{StaticResource List}" ItemContainerStyle="{StaticResource Row}" ItemTemplate="{StaticResource RowTpl}"
+                   IsSynchronizedWithCurrentItem="True" AutomationProperties.Name="{Binding [tweaks], Source={x:Static m:L.I}}">
+            <ListBox.GroupStyle>
+              <GroupStyle ContainerStyle="{StaticResource GroupPanel}"/>
+            </ListBox.GroupStyle>
+          </ListBox>
+
+          <!-- games: read-only connection test -->
+          <StackPanel x:Name="DiagPanel" Visibility="Collapsed">
+            <TextBlock Text="{Binding [diag], Source={x:Static m:L.I}}" Style="{StaticResource Label}" FontSize="13" Margin="0,0,0,8"/>
+            <Border Background="{DynamicResource Surface}" CornerRadius="8" Padding="20">
+              <StackPanel>
+                <DockPanel>
+                  <Button x:Name="DiagRun" DockPanel.Dock="Right" Style="{StaticResource Secondary}" VerticalAlignment="Top" Margin="24,0,0,0"
+                          Content="{Binding [diagRun], Source={x:Static m:L.I}}" Click="Diag_Click"/>
+                  <TextBlock Text="{Binding [diagBody], Source={x:Static m:L.I}}" Style="{StaticResource Body}" FontSize="13" Foreground="{DynamicResource Muted}"/>
+                </DockPanel>
+                <Grid x:Name="DiagResults" Visibility="Collapsed" Margin="0,16,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Margin="0,0,16,0">
+                    <TextBlock Text="{Binding [diagLan], Source={x:Static m:L.I}}" Style="{StaticResource Label}"/>
+                    <TextBlock x:Name="DiagLan" Style="{StaticResource SpecValue}" Typography.NumeralAlignment="Tabular"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding [diagWan], Source={x:Static m:L.I}}" Style="{StaticResource Label}"/>
+                    <TextBlock x:Name="DiagWan" Style="{StaticResource SpecValue}" Typography.NumeralAlignment="Tabular"/>
+                  </StackPanel>
+                </Grid>
+                <TextBlock x:Name="DiagVerdict" Style="{StaticResource Body}" FontSize="13" Margin="0,12,0,0" Visibility="Collapsed"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </StackPanel>
       </ScrollViewer>
+
+      <!-- detail of the selected tweak -->
+      <Border Grid.Row="2" Grid.Column="1" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Body}" FontSize="12" LineHeight="16" Foreground="{DynamicResource Subtle}" Margin="24,0,24,20">
+            <Run Text="{Binding [backupNote], Source={x:Static m:L.I}, Mode=OneWay}"/><LineBreak/>
+            <Run x:Name="BackupLocation" FontFamily="{StaticResource Mono}"/>
+          </TextBlock>
+          <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" DataContext="{Binding SelectedItem, ElementName=List}">
+            <StackPanel Margin="24">
+              <TextBlock x:Name="PanelStatus" Text="{Binding StatusText}" Style="{StaticResource Label}"/>
+              <TextBlock Text="{Binding T.Title}" Style="{StaticResource Head}" FontSize="20" LineHeight="28" Margin="0,4,0,0"/>
+
+              <DockPanel Margin="0,12,0,0" Visibility="{Binding ShowRisk, Converter={StaticResource Vis}}">
+                <TextBlock DockPanel.Dock="Left" VerticalAlignment="Top" Margin="0,3,8,0">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource Glyph}">
+                      <Setter Property="Text" Value="&#xE7BA;"/>
+                      <Setter Property="Foreground" Value="{DynamicResource Warn}"/>
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding T.Stripe}" Value="Black">
+                          <Setter Property="Text" Value="&#xE945;"/>
+                          <Setter Property="Foreground" Value="{DynamicResource Danger}"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="{Binding RiskSentence}" FontSize="13">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                      <Setter Property="Foreground" Value="{DynamicResource Warn}"/>
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding T.Stripe}" Value="Black">
+                          <Setter Property="Foreground" Value="{DynamicResource Danger}"/>
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </DockPanel>
+
+              <TextBlock Text="{Binding Error}" Style="{StaticResource Body}" FontSize="13" Foreground="{DynamicResource Danger}" Margin="0,12,0,0"
+                         Visibility="{Binding HasError, Converter={StaticResource Vis}}"/>
+
+              <TextBlock Text="{Binding [effect], Source={x:Static m:L.I}}" Style="{StaticResource Label}" Margin="0,24,0,4"/>
+              <TextBlock Text="{Binding T.Effect}" Style="{StaticResource Body}"/>
+
+              <TextBlock Text="{Binding [contra], Source={x:Static m:L.I}}" Style="{StaticResource Label}" Margin="0,20,0,4"/>
+              <TextBlock Text="{Binding T.Contraindication}" Style="{StaticResource Body}"/>
+
+              <TextBlock Text="{Binding [dosage], Source={x:Static m:L.I}}" Style="{StaticResource Label}" Margin="0,20,0,8"/>
+              <Border Padding="12,8" CornerRadius="6" Background="{DynamicResource Surface2}">
+                <TextBlock Text="{Binding T.Dosage}" FontFamily="{StaticResource Mono}" FontSize="12" LineHeight="20"
+                           Foreground="{DynamicResource Text}" TextWrapping="Wrap"/>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
     </Grid>
 
     <!-- confirmation: trade-offs are shown again before anything changes -->
     <Grid x:Name="Overlay" Visibility="Collapsed" Background="{DynamicResource Scrim}">
-      <Border Width="540" VerticalAlignment="Center" HorizontalAlignment="Center" CornerRadius="6"
+      <Border Width="520" VerticalAlignment="Center" HorizontalAlignment="Center" CornerRadius="8" Padding="24"
               Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="1">
         <StackPanel>
-          <Border x:Name="OvHatch" Height="8" CornerRadius="6,6,0,0"/>
-          <StackPanel Margin="28,20,28,24">
-            <StackPanel x:Name="OvRisk" Orientation="Horizontal" Margin="0,0,0,10">
-              <TextBlock x:Name="OvRiskIcon" Style="{StaticResource Glyph}"/>
-              <TextBlock x:Name="OvRiskText" Style="{StaticResource Label}" TextWrapping="Wrap"/>
-            </StackPanel>
-            <TextBlock x:Name="OvTitle" Style="{StaticResource Head}" FontSize="25"/>
-            <TextBlock x:Name="OvBody" Style="{StaticResource Body}" Foreground="{DynamicResource Muted}" Margin="0,8,0,0"/>
-            <Border x:Name="OvDosageBox" Margin="0,14,0,0" Padding="12,9" CornerRadius="3" Background="{DynamicResource Surface2}">
-              <TextBlock x:Name="OvDosage" FontFamily="{StaticResource Mono}" FontSize="12" LineHeight="18" TextWrapping="Wrap"/>
-            </Border>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
-              <Button x:Name="OvCancel" Content="{Binding [cancel], Source={x:Static m:L.I}}" Style="{StaticResource Secondary}" Click="OvCancel_Click" IsCancel="True"/>
-              <Button x:Name="OvOk" Style="{StaticResource Primary}" Click="OvOk_Click" Margin="8,0,0,0"/>
-            </StackPanel>
+          <StackPanel x:Name="OvRisk" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock x:Name="OvRiskIcon" Style="{StaticResource Glyph}" Margin="0,0,8,0"/>
+            <TextBlock x:Name="OvRiskText" Style="{StaticResource Label}" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center"/>
+          </StackPanel>
+          <TextBlock x:Name="OvTitle" Style="{StaticResource Head}" FontSize="20"/>
+          <TextBlock x:Name="OvBody" Style="{StaticResource Body}" Foreground="{DynamicResource Muted}" Margin="0,8,0,0"/>
+          <Border x:Name="OvDosageBox" Margin="0,16,0,0" Padding="12,8" CornerRadius="6" Background="{DynamicResource Surface2}">
+            <TextBlock x:Name="OvDosage" FontFamily="{StaticResource Mono}" FontSize="12" LineHeight="20" TextWrapping="Wrap"/>
+          </Border>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+            <Button x:Name="OvCancel" Content="{Binding [cancel], Source={x:Static m:L.I}}" Style="{StaticResource Secondary}" Click="OvCancel_Click" IsCancel="True"/>
+            <Button x:Name="OvOk" Style="{StaticResource Primary}" Click="OvOk_Click" Margin="8,0,0,0"/>
           </StackPanel>
         </StackPanel>
       </Border>

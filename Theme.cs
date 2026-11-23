@@ -3,7 +3,7 @@ using System.Windows.Media;
 
 namespace MspTweaker;
 
-/// Color tokens: dark is a graphite board, light is a white-edition board, gold is the ENIG pad finish.
+/// Color tokens: neutral greys like a vendor control app, one orange that only marks what still needs action.
 /// XAML must use {DynamicResource Key} for them, or theme switching will not reach it.
 static class Theme
 {
@@ -11,28 +11,23 @@ static class Theme
 
     static readonly Dictionary<string, (string Dark, string Light)> Tokens = new()
     {
-        ["Bg"] = ("#161616", "#EDF0EB"),
-        ["Surface"] = ("#1E1E1E", "#F7F8F5"),
-        ["Surface2"] = ("#101010", "#E3E7E0"),
-        ["Hover"] = ("#272727", "#E1E6DE"),
-        ["Line"] = ("#333333", "#C3CBC1"),
-        ["LineStrong"] = ("#7C7C7C", "#6E786F"),
-        ["Text"] = ("#ECEAE6", "#19201B"),
-        ["Muted"] = ("#A8A8A8", "#556058"),
-        ["Subtle"] = ("#717171", "#8C968E"),
-        ["Accent"] = ("#D9B45B", "#C9A245"),
-        ["AccentFg"] = ("#161616", "#19201B"),
-        ["AccentText"] = ("#E6C46F", "#8A6A16"),
-        ["Warn"] = ("#F2B54A", "#A86400"),
-        ["Danger"] = ("#FF7B63", "#B8321C"),
-        ["DangerFill"] = ("#E0482F", "#C93A22"),
-        ["Scrim"] = ("#B3000000", "#66131A15"),
+        ["Bg"] = ("#161616", "#F3F3F3"),
+        ["Surface"] = ("#202020", "#FFFFFF"),
+        ["Surface2"] = ("#2B2B2B", "#E8E8E8"),
+        ["Hover"] = ("#262626", "#F0F0F0"),
+        ["Line"] = ("#2E2E2E", "#E2E2E2"),
+        ["LineStrong"] = ("#4A4A4A", "#BDBDBD"),
+        ["Text"] = ("#F0F0F0", "#161616"),
+        ["Muted"] = ("#A3A3A3", "#575757"),
+        ["Subtle"] = ("#878787", "#737373"),
+        ["Accent"] = ("#FF5F1F", "#FF5F1F"),
+        ["AccentFg"] = ("#161616", "#161616"),
+        ["AccentText"] = ("#FF7A45", "#C2410C"),
+        ["Warn"] = ("#F5A524", "#A15C00"),
+        ["Danger"] = ("#FF6369", "#C62F35"),
+        ["DangerFill"] = ("#D93036", "#C62F35"),
+        ["Scrim"] = ("#B3000000", "#66161616"),
         ["CloseHover"] = ("#C42B1C", "#C42B1C"),
-        ["LedOff"] = ("#0D0D0D", "#D6DBD3"),
-        ["LedRim"] = ("#3E3E3E", "#AEB7AD"),
-        ["LedGold"] = ("#FFD36A", "#E0A800"),
-        ["LedAmber"] = ("#FFB13B", "#E08A00"),
-        ["LedRed"] = ("#FF5A45", "#D9381E"),
     };
 
     public static void Set(bool dark)
